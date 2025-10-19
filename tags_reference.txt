@@ -1,0 +1,133 @@
+Critical Bugs Found
+1. Speed Test Not Working - Missing Implementation
+Location: modules.js - SMTPManager class
+Issue: Speed test functionality is referenced in config but never implemented
+Problems:
+
+Config has smtp.performance.showSpeedTest: false but no speed test code exists
+Remove this speed test method from the mailer.we dont want any code related to it
+
+2. Template Cache Initialization Race Condition
+Location: paste.txt line 2028
+Issue: Template cache is used before proper initialization
+javascript// Template cache initialization moved above class definition
+const templateCache = new SmartTemplateCache(100);
+Problem: Cache is created but templateCache.get() is called before cache warming
+3. Sender Name Rotation Bug
+Location: paste.txt line 1398
+Issue: Sender name is applied incorrectly in sendEmail function
+javascript// FIXED: Use sender name from mailOptions if provided, otherwise use SMTP default
+if (!mailOptions.from) {
+  mailOptions.from = smtp.fromEmail;
+}
+
+// Apply sender name if provided in mailOptions
+if (mailOptions.senderName && mailOptions.senderName.trim()) {
+  const fromEmail = smtp.fromEmail;
+  mailOptions.from = `"${mailOptions.senderName}" <${fromEmail}>`;
+}
+Problem: Logic doesn't handle empty sender names properly
+4. License Checker Memory Leak
+Location: paste.txt line 644-680
+Issue: License validation creates new objects repeatedly without cleanup
+javascript// Old machine/validation files cleanup
+_cleanupOldCacheFiles() {
+  const oldFiles = [
+    this._getSecurePath(".mch_data"),
+    this._getSecurePath(".val_cache"),
+  ];
+  // Files are deleted but references may persist
+}
+5. Thread Safety Issues in Rate Limiting
+Location: modules.js lines 1100-1150
+Issue: Race conditions in SMTP rate limiting
+javascriptasync checkSmtpRateLimit(smtpIndex) {
+  if (!config.smtp.rateLimit?.enabled) {
+    return { allowed: true, waitTime: 0 };
+  }
+
+  await this.rateLimitMutex.acquire();
+  try {
+    // Rate limit logic here
+  } finally {
+    this.rateLimitMutex.release();
+  }
+}
+Problem: Multiple threads can modify rate limit counters simultaneously
+Missing Speed Test Implementation
+What's Missing:
+
+Speed Test Methods: No actual speed test implementation in SMTPManager
+Performance Display: Metrics are collected but not shown
+Connection Testing: No SMTP connection speed measurement
+
+Required Implementation:
+javascript// Add to SMTPManager class
+async runSpeedTest() {
+  console.log(chalk.cyan('🚀 Running SMTP Speed Test...'));
+  
+  const results = [];
+  
+  for (let i = 0; i < this.smtpConfigs.length; i++) {
+    try {
+      const startTime = Date.now();
+      const smtp = this._buildSmtpObject(i);
+      const transport = await this.createTransport(smtp);
+      
+      // Test connection speed
+      await transport.verify();
+      
+      const connectionTime = Date.now() - startTime;
+      
+      results.push({
+        index: i + 1,
+        host: smtp.host,
+        connectionTime,
+        status: 'Connected'
+      });
+      
+      console.log(chalk.green(`✅ SMTP ${i + 1} (${smtp.host}): ${connectionTime}ms`));
+      
+    } catch (error) {
+      results.push({
+        index: i + 1,
+        host: this.smtpConfigs[i].host,
+        connectionTime: null,
+        status: 'Failed',
+        error: error.message
+      });
+      
+      console.log(chalk.red(`❌ SMTP ${i + 1} (${this.smtpConfigs[i].host}): ${error.message}`));
+    }
+  }
+  
+  return results;
+}
+Other Notable Issues
+6. PDF Converter Browser Cleanup
+Location: paste.txt lines 191-240
+Issue: Browser instances may not close properly
+javascript// Enhanced browser cleanup with force-kill fallback
+if (browser) {
+  try {
+    await browser.close();
+  } catch (error) {
+    // Force close on error
+    try {
+      const process = browser.process();
+      if (process) {
+        process.kill('SIGKILL');
+      }
+    } catch {
+      // Silent fail on force kill
+    }
+  }
+}
+Problem: Multiple browser instances can accumulate if cleanup fails
+
+7. Dynamic Content Processor Cache
+Location: modules.js lines 200-300
+Issue: LRU cache size management
+javascript// Fixed: Use LRU cache with size limit
+this.macroCache = new LRUCache(1000);
+Problem: Large cache size (1000) without memory monitoring
