@@ -1,4 +1,4 @@
-# Barracuda Mailer
+## Barracuda Mailer v2.2 (Public Version) - v3 Pro (Community RProxy LAB)
 
 <div align="center">
 <img src="https://github.com/user-attachments/assets/dd50388a-a30f-4018-b0c7-48561fc7f19f" />
