@@ -11,6 +11,7 @@
 - Hidden Mode — Work quietly in the background, compatible with VPN, while your local computer is running smoothly.
 - Randomized delivery times — Increase sender's service life and maximize success rates
 
+https://github.com/user-attachments/assets/413ee0a6-e052-4928-a522-0fda75d4864c
 
 ### Adaptive speed limit (fixes WinError 10060 error)
 When testing a large number of SMTP accounts, the connection may timeout after a series of authentication attempts. Version 2.0 introduces adaptive rate limiting to prevent PROVIDER blockages and connection timeouts.:
